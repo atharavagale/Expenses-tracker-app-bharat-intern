@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="Money tracker.css">
+    <title>Money Tracker App</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Money Tracker</h1>
+        <div id="balance">Balance: $0.00</div>
+        <form id="transaction-form" onsubmit="addTransaction(); return false;">
+            <label for="type">Type:</label>
+            <select id="type" required>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+            </select>
+            <label for="description">Description:</label>
+            <input type="text" id="description" required>
+            <label for="amount">Amount:</label>
+            <input type="number" id="amount" required>
+            <button type="button" onclick="addTransaction()">Add Transaction</button>
+        </form>
+        <ul id="transaction-list"></ul>
+    </div>
+    
+    <!-- Include this script in your HTML file -->
+    <script>
+        async function addTransaction() {
+            console.log('addTransaction function called');
+    
+            const type = document.getElementById('type').value;
+            const description = document.getElementById('description').value;
+            const amount = document.getElementById('amount').value;
+    
+            try {
+                const response = await fetch('/api/transactions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ type, description, amount }),
+                });
+    
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.statusText}`);
+                }
+    
+                const data = await response.json();
+                console.log('Transaction added successfully:', data);
+    
+                // Update UI with latest balance
+                updateBalanceUI();
+    
+            } catch (error) {
+                console.error('Error adding transaction:', error.message);
+            }
+        }
+    
+        function updateBalanceUI() {
+            // Fetch income and expense transactions separately
+            fetch('/api/transactions')
+                .then(response => response.json())
+                .then(transactions => {
+                    const incomeTransactions = transactions.filter(transaction => transaction.type === 'income');
+                    const expenseTransactions = transactions.filter(transaction => transaction.type === 'expense');
+        
+                    // Calculate the total income
+                    const totalIncome = incomeTransactions.reduce((acc, transaction) => acc + transaction.amount, 0);
+        
+                    // Calculate the total expense
+                    const totalExpense = expenseTransactions.reduce((acc, transaction) => acc + transaction.amount, 0);
+        
+                    // Calculate the balance (income - expense)
+                    const balance = totalIncome - totalExpense;
+        
+                    const balanceElement = document.getElementById('balance');
+                    balanceElement.textContent = `Balance: $${balance.toFixed(2)}`;
+                })
+                .catch(error => {
+                    console.error('Error fetching transactions:', error.message);
+                });
+        }
+        
+        
+    </script>
+    
+</body>
+</html>
